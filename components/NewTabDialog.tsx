@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { Plus } from 'lucide-react';
+import React, { useState } from "react";
+import { Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -10,11 +10,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 interface NewTabDialogProps {
   onCreateTab: (title: string, description?: string) => void;
@@ -22,14 +22,14 @@ interface NewTabDialogProps {
 
 export function NewTabDialog({ onCreateTab }: NewTabDialogProps) {
   const [open, setOpen] = useState(false);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
 
   const handleCreate = (): void => {
     if (title.trim()) {
       onCreateTab(title.trim(), description.trim() || undefined);
-      setTitle('');
-      setDescription('');
+      setTitle("");
+      setDescription("");
       setOpen(false);
     }
   };
@@ -37,16 +37,15 @@ export function NewTabDialog({ onCreateTab }: NewTabDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="gap-2 bg-gradient-to-r from-blue-500 to-purple-500 border-0 text-white hover:shadow-lg hover:scale-105 transition-all duration-300"
-        >
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2 bg-gradient-to-r from-blue-500 to-purple-500 border-0 text-white hover:shadow-lg hover:scale-105 transition-all duration-300">
           <Plus className="w-4 h-4" />
           New Tab
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="bg-white/80">
         <DialogHeader>
           <DialogTitle>Create New Tab</DialogTitle>
           <DialogDescription>
@@ -63,7 +62,7 @@ export function NewTabDialog({ onCreateTab }: NewTabDialogProps) {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
+                if (e.key === "Enter") {
                   handleCreate();
                 }
               }}

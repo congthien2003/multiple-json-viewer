@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import React, { useRef, useEffect } from 'react';
-import { AlertCircle, Check, Wand2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { JSONFormatter } from '@/lib/json-formatter';
+import React, { useRef, useEffect } from "react";
+import { AlertCircle, Check, Wand2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { JSONFormatter } from "@/lib/json-formatter";
 
 interface JsonEditorProps {
   value: string;
@@ -23,7 +23,7 @@ export function JsonEditor({ value, onChange, onFormat }: JsonEditorProps) {
       onChange(formatted);
       onFormat?.();
     } catch (error) {
-      console.error('Format error:', error);
+      console.error("Format error:", error);
     }
   };
 
@@ -32,11 +32,13 @@ export function JsonEditor({ value, onChange, onFormat }: JsonEditorProps) {
       const minified = JSONFormatter.minifyJSON(value);
       onChange(minified);
     } catch (error) {
-      console.error('Minify error:', error);
+      console.error("Minify error:", error);
     }
   };
 
-  const stats = value ? JSONFormatter.getJSONSize(value) : { chars: 0, lines: 0, size: '0 B' };
+  const stats = value
+    ? JSONFormatter.getJSONSize(value)
+    : { chars: 0, lines: 0, size: "0 B" };
 
   return (
     <div className="flex flex-col gap-4 flex-1">
@@ -66,9 +68,7 @@ export function JsonEditor({ value, onChange, onFormat }: JsonEditorProps) {
       {!validation.valid && value && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            {validation.error}
-          </AlertDescription>
+          <AlertDescription>{validation.error}</AlertDescription>
         </Alert>
       )}
 
@@ -77,7 +77,7 @@ export function JsonEditor({ value, onChange, onFormat }: JsonEditorProps) {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Paste your JSON here or type JSON content..."
-        className="flex-1 font-mono text-sm resize-none min-h-0 overflow-y-auto"
+        className="flex-1 font-mono text-sm resize-none min-h-0 overflow-y-auto liquid-glass-input bg-white/5 dark:bg-black/20 focus:border-indigo-400/50"
       />
 
       <div className="flex gap-2">
@@ -86,8 +86,7 @@ export function JsonEditor({ value, onChange, onFormat }: JsonEditorProps) {
           disabled={!validation.valid || !value}
           variant="outline"
           size="sm"
-          className="gap-2 bg-transparent hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all duration-300"
-        >
+          className="gap-2">
           <Wand2 className="w-4 h-4" />
           Format
         </Button>
@@ -95,9 +94,7 @@ export function JsonEditor({ value, onChange, onFormat }: JsonEditorProps) {
           onClick={handleMinify}
           disabled={!validation.valid || !value}
           variant="outline"
-          size="sm"
-          className="hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all duration-300 bg-transparent"
-        >
+          size="sm">
           Minify
         </Button>
       </div>

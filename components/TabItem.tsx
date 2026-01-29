@@ -1,15 +1,16 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { X, Copy, Trash2 } from 'lucide-react';
+import React from "react";
+import { X, Copy, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
-import { JsonTab } from '@/types';
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { JsonTab } from "@/types";
+import { cn } from "@/lib/utils";
 
 interface TabItemProps {
   tab: JsonTab;
@@ -29,20 +30,23 @@ export function TabItem({
   return (
     <button
       onClick={onSelect}
-      className={`flex items-center gap-2 px-4 py-2 rounded-t-lg border-b-2 transition-all duration-300 group relative overflow-hidden ${
-        isActive
-          ? 'bg-white dark:bg-slate-800/50 border-blue-500 text-foreground shadow-sm animate-slideUp'
-          : 'bg-muted border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/80 hover:border-blue-300'
-      }`}
-    >
-      <div className="flex-1 text-left truncate">
-        <div className="text-sm font-semibold truncate">
+      className={cn(
+        "flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 group relative",
+        "tab-glass",
+        isActive && "active",
+      )}>
+      <div className="flex-1 text-left truncate relative z-10">
+        <div
+          className={cn(
+            "text-sm font-semibold truncate transition-colors",
+            isActive
+              ? "text-foreground"
+              : "text-muted-foreground group-hover:text-foreground",
+          )}>
           {tab.title}
         </div>
         {tab.description && (
-          <div className="text-xs opacity-70 truncate">
-            {tab.description}
-          </div>
+          <div className="text-xs opacity-60 truncate">{tab.description}</div>
         )}
       </div>
 
@@ -52,17 +56,20 @@ export function TabItem({
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
-              onClick={(e) => e.stopPropagation()}
-            >
+              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 hover:bg-white/20 rounded-lg transition-all"
+              onClick={(e) => e.stopPropagation()}>
               ⋯
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={(e) => {
-              e.stopPropagation();
-              onDuplicate();
-            }}>
+          <DropdownMenuContent
+            align="end"
+            className="liquid-glass border-white/20">
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onDuplicate();
+              }}
+              className="hover:bg-white/10">
               <Copy className="w-4 h-4 mr-2" />
               Duplicate
             </DropdownMenuItem>
@@ -71,8 +78,7 @@ export function TabItem({
                 e.stopPropagation();
                 onDelete();
               }}
-              className="text-destructive"
-            >
+              className="text-destructive hover:bg-red-500/10">
               <Trash2 className="w-4 h-4 mr-2" />
               Delete
             </DropdownMenuItem>

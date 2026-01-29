@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { HelpCircle } from 'lucide-react';
+import React from "react";
+import { HelpCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -9,18 +9,18 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 const SHORTCUTS = [
   {
-    keys: ['Ctrl/Cmd', 'T'],
-    description: 'Toggle between Raw and Formatted view',
+    keys: ["Ctrl/Cmd", "T"],
+    description: "Toggle between Raw and Formatted view",
   },
   {
-    keys: ['Ctrl/Cmd', 'N'],
-    description: 'Create a new tab',
+    keys: ["Ctrl/Cmd", "N"],
+    description: "Create a new tab",
   },
 ];
 
@@ -32,9 +32,9 @@ export function KeyboardHelpDialog() {
           <HelpCircle className="w-4 h-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="bg-white/20">
         <DialogHeader>
-          <DialogTitle>Keyboard Shortcuts</DialogTitle>
+          <DialogTitle className="text-white">Keyboard Shortcuts</DialogTitle>
           <DialogDescription>
             Learn keyboard shortcuts to work faster
           </DialogDescription>
@@ -44,8 +44,7 @@ export function KeyboardHelpDialog() {
           {SHORTCUTS.map((shortcut, index) => (
             <div
               key={index}
-              className="flex items-center gap-4 p-3 rounded-lg border border-white/20 dark:border-white/10 bg-white/10 dark:bg-white/5 backdrop-blur-sm hover:bg-white/15 dark:hover:bg-white/8 transition-colors duration-300"
-            >
+              className="flex items-center gap-4 p-3 rounded-lg border border-white/20 dark:border-white/10 bg-white/10 dark:bg-white/5 backdrop-blur-sm hover:bg-white/15 dark:hover:bg-white/8 transition-colors duration-300">
               <div className="flex gap-2">
                 {shortcut.keys.map((key, keyIndex) => (
                   <React.Fragment key={key}>
@@ -53,16 +52,12 @@ export function KeyboardHelpDialog() {
                       {key}
                     </Badge>
                     {keyIndex < shortcut.keys.length - 1 && (
-                      <span className="text-muted-foreground text-sm">
-                        +
-                      </span>
+                      <span className="text-muted-foreground text-sm">+</span>
                     )}
                   </React.Fragment>
                 ))}
               </div>
-              <p className="text-sm text-muted-foreground">
-                {shortcut.description}
-              </p>
+              <p className="text-sm text-white">{shortcut.description}</p>
             </div>
           ))}
         </div>
