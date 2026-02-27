@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { Open_Sans, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { AppProvider } from '@/contexts/AppContext'
+import { Toaster } from 'react-hot-toast'
 import './globals.css'
 
 const openSans = Open_Sans({ subsets: ["latin"], variable: '--font-sans' });
@@ -43,6 +44,17 @@ export default function RootLayout({
         <AppProvider>
           {children}
         </AppProvider>
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 2200,
+            style: {
+              background: '#0f172a',
+              color: '#f8fafc',
+              border: '1px solid rgba(255,255,255,0.12)',
+            },
+          }}
+        />
         <Analytics />
       </body>
     </html>

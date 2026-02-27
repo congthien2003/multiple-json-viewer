@@ -3,7 +3,7 @@
 import React from "react";
 import { Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
+import toast from "react-hot-toast";
 
 interface JsonRawViewProps {
   content: string;
@@ -11,15 +11,15 @@ interface JsonRawViewProps {
 }
 
 export function JsonRawView({ content, theme }: JsonRawViewProps) {
-  const { toast } = useToast();
-
   const copyToClipboard = (): void => {
-    navigator.clipboard.writeText(content).then(() => {
-      toast({
-        description: "Copied to clipboard!",
-        duration: 2000,
+    navigator.clipboard
+      .writeText(content)
+      .then(() => {
+        toast.success("Copied to clipboard!", { duration: 2000 });
+      })
+      .catch(() => {
+        toast.error("Failed to copy.", { duration: 2000 });
       });
-    });
   };
 
   const getThemeClasses = () => {

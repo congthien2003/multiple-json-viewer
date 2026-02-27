@@ -1,11 +1,12 @@
 "use client";
 
-import { useRef }from "react";
-import { AlertCircle, Check, Wand2 }from "lucide-react";
-import { Button }from "@/components/ui/button";
-import { Textarea }from "@/components/ui/textarea";
-import { Alert, AlertDescription }from "@/components/ui/alert";
-import { JSONFormatter }from "@/lib/json-formatter";
+import { useRef } from "react";
+import { AlertCircle, Check, Wand2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { JSONFormatter } from "@/lib/json-formatter";
+import toast from "react-hot-toast";
 
 interface JsonEditorProps {
   value: string;
@@ -22,8 +23,10 @@ export function JsonEditor({ value, onChange, onFormat }: JsonEditorProps) {
       const formatted = JSONFormatter.formatJSON(value, 2);
       onChange(formatted);
       onFormat?.();
-    }catch (error) {
+      toast.success("JSON formatted", { duration: 1800 });
+    } catch (error) {
       console.error("Format error:", error);
+      toast.error("Format failed. Please check JSON validity.", { duration: 2200 });
     }
   };
 
@@ -31,8 +34,10 @@ export function JsonEditor({ value, onChange, onFormat }: JsonEditorProps) {
     try {
       const minified = JSONFormatter.minifyJSON(value);
       onChange(minified);
-    }catch (error) {
+      toast.success("JSON minified", { duration: 1800 });
+    } catch (error) {
       console.error("Minify error:", error);
+      toast.error("Minify failed. Please check JSON validity.", { duration: 2200 });
     }
   };
 

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { Plus, Settings, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { JsonEditor } from "@/components/JsonEditor";
@@ -40,9 +41,34 @@ export function JsonViewer() {
   const activeTab = state.activeTabId ? getTab(state.activeTabId) : null;
   const isEmpty = state.tabs.length === 0;
 
+  const handleCreateTab = (title: string, description?: string): void => {
+    addTab(title, description);
+    toast.success("Tab created", { duration: 1800 });
+  };
+
+  const handleQuickTab = (): void => {
+    const newTab = addTab(`Untitled ${state.tabs.length + 1}`);
+    setActiveTab(newTab.id);
+    toast.success("Quick tab created", { duration: 1800 });
+  };
+
+  const handleDuplicateTab = (id: string): void => {
+    duplicateTab(id);
+    toast.success("Tab duplicated", { duration: 1800 });
+  };
+
+  const handleDeleteTab = (id: string): void => {
+    deleteTab(id);
+    toast.success("Tab deleted", { duration: 1800 });
+  };
+
   const handleClearAll = (): void => {
     if (confirm("Are you sure? This will delete all tabs.")) {
+      const count = state.tabs.length;
       state.tabs.forEach((tab) => deleteTab(tab.id));
+      toast.success(`Deleted ${count} tab${count > 1 ? "s" : ""}`, {
+        duration: 2000,
+      });
     }
   };
 
@@ -59,6 +85,7 @@ export function JsonViewer() {
       callback: () => {
         const newTab = addTab(`Untitled ${state.tabs.length + 1}`);
         setActiveTab(newTab.id);
+        toast.success("Tab created", { duration: 1800 });
       },
       description: "Create new tab",
     },
@@ -141,7 +168,7 @@ export function JsonViewer() {
                 <p className="mb-6 text-sm text-muted-foreground">
                   Create your first tab to start editing JSON immediately.
                 </p>
-                <NewTabDialog onCreateTab={addTab} />
+                <NewTabDialog onCreateTab={handleCreateTab} />
               </div>
             </div>
           </div>
@@ -155,20 +182,17 @@ export function JsonViewer() {
                     tab={tab}
                     isActive={state.activeTabId === tab.id}
                     onSelect={() => setActiveTab(tab.id)}
-                    onDuplicate={() => duplicateTab(tab.id)}
-                    onDelete={() => deleteTab(tab.id)}
+                    onDuplicate={() => handleDuplicateTab(tab.id)}
+                    onDelete={() => handleDeleteTab(tab.id)}
                   />
                 ))}
               </div>
               <div className="flex shrink-0 gap-2 border-l border-white/10 pl-2">
-                <NewTabDialog onCreateTab={addTab} />
+                <NewTabDialog onCreateTab={handleCreateTab} />
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => {
-                    const newTab = addTab(`Untitled ${state.tabs.length + 1}`);
-                    setActiveTab(newTab.id);
-                  }}
+                  onClick={handleQuickTab}
                   className="liquid-glass-button gap-2"
                 >
                   <Plus className="h-4 w-4" />

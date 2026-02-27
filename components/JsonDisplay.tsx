@@ -1,9 +1,26 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { ChevronDown, ChevronRight, Copy, Maximize2, Minimize2 } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronRight,
+  Copy,
+  Download,
+  Maximize2,
+  Minimize2,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
+import toast from 'react-hot-toast';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  generateCSharpClasses,
+  generateTypeScriptInterfaces,
+} from '@/lib/json-codegen';
 
 interface JsonDisplayProps {
   content: string;
@@ -22,10 +39,10 @@ interface ThemeColors {
 
 const ROOT_PATH = 'root';
 const INDENT_SIZE = 18;
+const ROOT_MODEL_NAME = 'Model';
 
 export function JsonDisplay({ content, theme }: JsonDisplayProps) {
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set([ROOT_PATH]));
-  const { toast } = useToast();
 
   const parsedResult = useMemo(() => {
     if (!content.trim()) {
@@ -79,7 +96,31 @@ export function JsonDisplay({ content, theme }: JsonDisplayProps) {
     if (!content.trim()) return;
 
     await navigator.clipboard.writeText(content);
-    toast({ description: 'Copied to clipboard!', duration: 2000 });
+    toast.success('Copied to clipboard!', { duration: 2000 });
+  };
+
+  const copyExport = async (format: 'csharp' | 'typescript'): Promise<void> => {
+    if (parsedResult.isEmpty || parsedResult.error || parsedResult.data === null) {
+      toast.error('Cannot export. Please provide valid JSON first.', { duration: 2500 });
+      return;
+    }
+
+    try {
+      const generated =
+        format === 'csharp'
+          ? generateCSharpClasses(parsedResult.data, ROOT_MODEL_NAME)
+          : generateTypeScriptInterfaces(parsedResult.data, ROOT_MODEL_NAME);
+
+      await navigator.clipboard.writeText(generated);
+      toast.success(
+        format === 'csharp'
+          ? 'C# model copied to clipboard.'
+          : 'TypeScript interface copied to clipboard.',
+        { duration: 2500 },
+      );
+    } catch {
+      toast.error('Failed to export model. Please try with another JSON shape.', { duration: 3000 });
+    }
   };
 
   const toggleExpanded = (key: string): void => {
@@ -167,9 +208,8 @@ export function JsonDisplay({ content, theme }: JsonDisplayProps) {
             onClick={() => toggleExpanded(keyPath)}
             className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 transition-colors hover:bg-white/10"
           >
-            {!isEmpty && (
-              isExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />
-            )}
+            {!isEmpty &&
+              (isExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />)}
             <span className={themeColors.bracket}>[</span>
             {!isEmpty && !isExpanded && (
               <span className={`${themeColors.text} text-xs opacity-70`}>
@@ -208,9 +248,8 @@ export function JsonDisplay({ content, theme }: JsonDisplayProps) {
             onClick={() => toggleExpanded(keyPath)}
             className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 transition-colors hover:bg-white/10"
           >
-            {!isEmpty && (
-              isExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />
-            )}
+            {!isEmpty &&
+              (isExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />)}
             <span className={themeColors.bracket}>{'{'}</span>
             {!isEmpty && !isExpanded && (
               <span className={`${themeColors.text} text-xs opacity-70`}>
@@ -278,6 +317,20 @@ export function JsonDisplay({ content, theme }: JsonDisplayProps) {
             <Minimize2 className="h-4 w-4" />
             Collapse all
           </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="gap-2 border border-white/10">
+                <Download className="h-4 w-4" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-60">
+              <DropdownMenuItem onClick={() => copyExport('csharp')}>Export C# Class (Model)</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => copyExport('typescript')}>
+                Export TypeScript Interface (Model)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button variant="ghost" size="sm" onClick={copyToClipboard} className="gap-2 border border-white/10">
             <Copy className="h-4 w-4" />
             Copy
@@ -286,7 +339,7 @@ export function JsonDisplay({ content, theme }: JsonDisplayProps) {
       </div>
 
       <div className="min-h-0 flex-1 overflow-auto px-4 py-3">
-        <div className="space-y-1 font-mono text-sm leading-6">{renderValue(parsedResult.data, ROOT_PATH, 0)}</div>
+        <div className="space-y-1 font-medium text-sm leading-6">{renderValue(parsedResult.data, ROOT_PATH, 0)}</div>
       </div>
     </div>
   );
