@@ -1,59 +1,101 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Copy, ChevronDown, ChevronRight } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { ChevronDown, ChevronRight, Copy, Maximize2, Minimize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { JSONFormatter } from '@/lib/json-formatter';
 
 interface JsonDisplayProps {
   content: string;
   theme: string;
 }
 
-interface JsonNode {
-  key: string | number;
-  value: unknown;
-  level: number;
-  type: 'array' | 'object' | 'string' | 'number' | 'boolean' | 'null';
+interface ThemeColors {
+  bg: string;
+  text: string;
+  bracket: string;
+  key: string;
+  string: string;
+  number: string;
+  boolean: string;
 }
 
+const ROOT_PATH = 'root';
+const INDENT_SIZE = 18;
+
 export function JsonDisplay({ content, theme }: JsonDisplayProps) {
-  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
+  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set([ROOT_PATH]));
   const { toast } = useToast();
 
-  const parseContent = (): unknown => {
-    try {
-      return JSON.parse(content);
-    } catch {
-      return null;
+  const parsedResult = useMemo(() => {
+    if (!content.trim()) {
+      return { data: null as unknown, error: null as string | null, isEmpty: true };
     }
-  };
 
-  const copyToClipboard = (): void => {
-    navigator.clipboard.writeText(content).then(() => {
-      toast({
-        description: 'Copied to clipboard!',
-        duration: 2000,
+    try {
+      return {
+        data: JSON.parse(content) as unknown,
+        error: null as string | null,
+        isEmpty: false,
+      };
+    } catch {
+      return {
+        data: null as unknown,
+        error: 'Invalid JSON. Please check commas, brackets, and key/value pairs.',
+        isEmpty: false,
+      };
+    }
+  }, [content]);
+
+  const allExpandablePaths = useMemo(() => {
+    const { data } = parsedResult;
+
+    if (!data || typeof data !== 'object') {
+      return [ROOT_PATH];
+    }
+
+    const paths: string[] = [];
+
+    const collect = (value: unknown, path: string): void => {
+      if (!value || typeof value !== 'object') return;
+
+      paths.push(path);
+
+      if (Array.isArray(value)) {
+        value.forEach((item, index) => collect(item, `${path}[${index}]`));
+        return;
+      }
+
+      Object.keys(value as Record<string, unknown>).forEach((key) => {
+        collect((value as Record<string, unknown>)[key], `${path}.${key}`);
       });
-    });
+    };
+
+    collect(data, ROOT_PATH);
+    return paths;
+  }, [parsedResult]);
+
+  const copyToClipboard = async (): Promise<void> => {
+    if (!content.trim()) return;
+
+    await navigator.clipboard.writeText(content);
+    toast({ description: 'Copied to clipboard!', duration: 2000 });
   };
 
   const toggleExpanded = (key: string): void => {
-    const newSet = new Set(expandedKeys);
-    if (newSet.has(key)) {
-      newSet.delete(key);
-    } else {
-      newSet.add(key);
-    }
-    setExpandedKeys(newSet);
+    setExpandedKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
   };
 
-  const getThemeColors = () => {
-    const themes: Record<
-      string,
-      { bg: string; text: string; bracket: string; key: string; string: string; number: string; boolean: string }
-    > = {
+  const expandAll = (): void => setExpandedKeys(new Set(allExpandablePaths));
+  const collapseAll = (): void => setExpandedKeys(new Set([ROOT_PATH]));
+
+  const getThemeColors = (): ThemeColors => {
+    const themes: Record<string, ThemeColors> = {
       light: {
         bg: 'bg-white',
         text: 'text-gray-800',
@@ -91,50 +133,28 @@ export function JsonDisplay({ content, theme }: JsonDisplayProps) {
         boolean: 'text-pink-300',
       },
     };
+
     return themes[theme] || themes.dark;
   };
 
-  const renderValue = (
-    value: unknown,
-    keyPath: string,
-    level: number
-  ): React.ReactNode => {
+  const renderValue = (value: unknown, keyPath: string, level: number): React.ReactNode => {
     const themeColors = getThemeColors();
-    const padding = level * 16;
+    const paddingLeft = `${level * INDENT_SIZE}px`;
 
-    if (
-      value === null ||
-      value === undefined
-    ) {
-      return (
-        <span className={themeColors.boolean}>
-          null
-        </span>
-      );
+    if (value === null || value === undefined) {
+      return <span className={themeColors.boolean}>null</span>;
     }
 
     if (typeof value === 'boolean') {
-      return (
-        <span className={themeColors.boolean}>
-          {value.toString()}
-        </span>
-      );
+      return <span className={themeColors.boolean}>{value.toString()}</span>;
     }
 
     if (typeof value === 'number') {
-      return (
-        <span className={themeColors.number}>
-          {value}
-        </span>
-      );
+      return <span className={themeColors.number}>{value}</span>;
     }
 
     if (typeof value === 'string') {
-      return (
-        <span className={themeColors.string}>
-          &quot;{value}&quot;
-        </span>
-      );
+      return <span className={themeColors.string}>&quot;{value}&quot;</span>;
     }
 
     if (Array.isArray(value)) {
@@ -142,61 +162,36 @@ export function JsonDisplay({ content, theme }: JsonDisplayProps) {
       const isEmpty = value.length === 0;
 
       return (
-        <div>
+        <div className="space-y-1">
           <button
             onClick={() => toggleExpanded(keyPath)}
-            className="inline-flex items-center gap-1 hover:bg-gray-200/10 rounded px-1"
+            className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 transition-colors hover:bg-white/10"
           >
             {!isEmpty && (
-              isExpanded ? (
-                <ChevronDown className="w-4 h-4" />
-              ) : (
-                <ChevronRight className="w-4 h-4" />
-              )
+              isExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />
             )}
-            <span className={themeColors.bracket}>
-              [
-            </span>
+            <span className={themeColors.bracket}>[</span>
             {!isEmpty && !isExpanded && (
               <span className={`${themeColors.text} text-xs opacity-70`}>
                 {value.length} item{value.length !== 1 ? 's' : ''}
               </span>
             )}
-            {!isEmpty && !isExpanded && (
-              <span className={themeColors.bracket}>
-                …
-              </span>
-            )}
+            {!isEmpty && !isExpanded && <span className={themeColors.bracket}>…]</span>}
+            {isEmpty && <span className={themeColors.bracket}>]</span>}
           </button>
+
           {isExpanded && !isEmpty && (
-            <div>
+            <div className="space-y-1">
               {value.map((item, index) => (
-                <div
-                  key={index}
-                  style={{ paddingLeft: `${padding}px` }}
-                >
-                  <span className={themeColors.bracket}>
-                    {renderValue(item, `${keyPath}[${index}]`, level + 1)}
-                  </span>
-                  {index < value.length - 1 && (
-                    <span className={themeColors.bracket}>
-                      ,
-                    </span>
-                  )}
+                <div key={index} style={{ paddingLeft }} className="leading-6">
+                  {renderValue(item, `${keyPath}[${index}]`, level + 1)}
+                  {index < value.length - 1 && <span className={themeColors.bracket}>,</span>}
                 </div>
               ))}
-              <span
-                style={{ paddingLeft: `${padding - 16}px` }}
-                className={themeColors.bracket}
-              >
-                ]
-              </span>
+              <div style={{ paddingLeft }}>
+                <span className={themeColors.bracket}>]</span>
+              </div>
             </div>
-          )}
-          {isEmpty && (
-            <span className={themeColors.bracket}>
-              ]
-            </span>
           )}
         </div>
       );
@@ -204,75 +199,42 @@ export function JsonDisplay({ content, theme }: JsonDisplayProps) {
 
     if (typeof value === 'object') {
       const isExpanded = expandedKeys.has(keyPath);
-      const keys = Object.keys(value);
+      const keys = Object.keys(value as Record<string, unknown>);
       const isEmpty = keys.length === 0;
 
       return (
-        <div>
+        <div className="space-y-1">
           <button
             onClick={() => toggleExpanded(keyPath)}
-            className="inline-flex items-center gap-1 hover:bg-gray-200/10 rounded px-1"
+            className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 transition-colors hover:bg-white/10"
           >
             {!isEmpty && (
-              isExpanded ? (
-                <ChevronDown className="w-4 h-4" />
-              ) : (
-                <ChevronRight className="w-4 h-4" />
-              )
+              isExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />
             )}
-            <span className={themeColors.bracket}>
-              {'{'}
-            </span>
+            <span className={themeColors.bracket}>{'{'}</span>
             {!isEmpty && !isExpanded && (
               <span className={`${themeColors.text} text-xs opacity-70`}>
                 {keys.length} key{keys.length !== 1 ? 's' : ''}
               </span>
             )}
-            {!isEmpty && !isExpanded && (
-              <span className={themeColors.bracket}>
-                …
-              </span>
-            )}
+            {!isEmpty && !isExpanded && <span className={themeColors.bracket}>{'…}'}</span>}
+            {isEmpty && <span className={themeColors.bracket}>{'}'}</span>}
           </button>
+
           {isExpanded && !isEmpty && (
-            <div>
+            <div className="space-y-1">
               {keys.map((key, index) => (
-                <div
-                  key={key}
-                  style={{ paddingLeft: `${padding}px` }}
-                  className="font-mono text-sm"
-                >
-                  <span className={themeColors.key}>
-                    &quot;{key}&quot;
-                  </span>
-                  <span className={themeColors.bracket}>
-                    :
-                  </span>
-                  {' '}
-                  {renderValue(
-                    (value as Record<string, unknown>)[key],
-                    `${keyPath}.${key}`,
-                    level + 1
-                  )}
-                  {index < keys.length - 1 && (
-                    <span className={themeColors.bracket}>
-                      ,
-                    </span>
-                  )}
+                <div key={key} style={{ paddingLeft }} className="font-mono text-sm leading-6">
+                  <span className={themeColors.key}>&quot;{key}&quot;</span>
+                  <span className={themeColors.bracket}>: </span>
+                  {renderValue((value as Record<string, unknown>)[key], `${keyPath}.${key}`, level + 1)}
+                  {index < keys.length - 1 && <span className={themeColors.bracket}>,</span>}
                 </div>
               ))}
-              <span
-                style={{ paddingLeft: `${padding - 16}px` }}
-                className={themeColors.bracket}
-              >
-                {'}'}
-              </span>
+              <div style={{ paddingLeft }}>
+                <span className={themeColors.bracket}>{'}'}</span>
+              </div>
             </div>
-          )}
-          {isEmpty && (
-            <span className={themeColors.bracket}>
-              {'}'}
-            </span>
           )}
         </div>
       );
@@ -281,39 +243,50 @@ export function JsonDisplay({ content, theme }: JsonDisplayProps) {
     return null;
   };
 
-  const data = parseContent();
   const themeColors = getThemeColors();
 
-  if (!data) {
+  if (parsedResult.isEmpty) {
     return (
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex flex-1 items-center justify-center rounded-xl border border-dashed border-white/20 bg-black/10 p-6 text-center">
         <p className="text-sm text-muted-foreground">
-          Invalid JSON format
+          No preview yet. Paste JSON in the Input panel to see formatted output.
         </p>
+      </div>
+    );
+  }
+
+  if (parsedResult.error) {
+    return (
+      <div className="flex flex-1 items-center justify-center rounded-xl border border-dashed border-red-400/40 bg-red-500/5 p-6 text-center">
+        <p className="text-sm text-red-400">{parsedResult.error}</p>
       </div>
     );
   }
 
   return (
     <div
-      className={`flex-1 ${themeColors.bg} ${themeColors.text} p-4 rounded-lg overflow-auto font-mono text-sm animate-fadeIn`}
+      className={`animate-fadeIn flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-white/10 ${themeColors.bg} ${themeColors.text}`}
     >
-      <div className="flex justify-between items-center mb-4">
-        <span className="text-xs opacity-70">
-          Formatted JSON View
-        </span>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={copyToClipboard}
-          className="gap-2 hover:bg-blue-100 dark:hover:bg-blue-950/30 transition-colors duration-300"
-        >
-          <Copy className="w-4 h-4" />
-          Copy
-        </Button>
+      <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+        <span className="text-xs font-medium tracking-wide opacity-70">Formatted JSON View</span>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={expandAll} className="gap-2 border border-white/10">
+            <Maximize2 className="h-4 w-4" />
+            Expand all
+          </Button>
+          <Button variant="ghost" size="sm" onClick={collapseAll} className="gap-2 border border-white/10">
+            <Minimize2 className="h-4 w-4" />
+            Collapse all
+          </Button>
+          <Button variant="ghost" size="sm" onClick={copyToClipboard} className="gap-2 border border-white/10">
+            <Copy className="h-4 w-4" />
+            Copy
+          </Button>
+        </div>
       </div>
-      <div className="space-y-0">
-        {renderValue(data, 'root', 0)}
+
+      <div className="min-h-0 flex-1 overflow-auto px-4 py-3">
+        <div className="space-y-1 font-mono text-sm leading-6">{renderValue(parsedResult.data, ROOT_PATH, 0)}</div>
       </div>
     </div>
   );

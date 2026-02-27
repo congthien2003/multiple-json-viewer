@@ -1,26 +1,23 @@
-import { AppState, AppSettings, JsonTab, TabViewState } from '@/types';
+import { AppState, AppSettings, JsonTab }from '@/types';
 
 const STORAGE_KEYS = {
   APP_STATE: 'json_viewer_app_state',
   TABS: 'json_viewer_tabs',
   SETTINGS: 'json_viewer_settings',
-  TAB_VIEWS: 'json_viewer_tab_views',
   ACTIVE_TAB: 'json_viewer_active_tab',
 };
 
 const DEFAULT_SETTINGS: AppSettings = {
   theme: 'dark',
-  defaultView: 'formatted',
 };
 
 export const StorageService = {
-  // AppState operations
   saveAppState: (state: AppState): void => {
     try {
       if (typeof window !== 'undefined') {
         localStorage.setItem(STORAGE_KEYS.APP_STATE, JSON.stringify(state));
       }
-    } catch (error) {
+    }catch (error) {
       console.error('Error saving app state:', error);
     }
   },
@@ -31,19 +28,18 @@ export const StorageService = {
         const data = localStorage.getItem(STORAGE_KEYS.APP_STATE);
         return data ? JSON.parse(data) : null;
       }
-    } catch (error) {
+    }catch (error) {
       console.error('Error loading app state:', error);
     }
     return null;
   },
 
-  // Tab operations
   saveTabs: (tabs: JsonTab[]): void => {
     try {
       if (typeof window !== 'undefined') {
         localStorage.setItem(STORAGE_KEYS.TABS, JSON.stringify(tabs));
       }
-    } catch (error) {
+    }catch (error) {
       console.error('Error saving tabs:', error);
     }
   },
@@ -54,19 +50,18 @@ export const StorageService = {
         const data = localStorage.getItem(STORAGE_KEYS.TABS);
         return data ? JSON.parse(data) : [];
       }
-    } catch (error) {
+    }catch (error) {
       console.error('Error loading tabs:', error);
     }
     return [];
   },
 
-  // Settings operations
   saveSettings: (settings: AppSettings): void => {
     try {
       if (typeof window !== 'undefined') {
         localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
       }
-    } catch (error) {
+    }catch (error) {
       console.error('Error saving settings:', error);
     }
   },
@@ -77,46 +72,22 @@ export const StorageService = {
         const data = localStorage.getItem(STORAGE_KEYS.SETTINGS);
         return data ? JSON.parse(data) : DEFAULT_SETTINGS;
       }
-    } catch (error) {
+    }catch (error) {
       console.error('Error loading settings:', error);
     }
     return DEFAULT_SETTINGS;
   },
 
-  // Tab view mode operations
-  saveTabViews: (views: TabViewState): void => {
-    try {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(STORAGE_KEYS.TAB_VIEWS, JSON.stringify(views));
-      }
-    } catch (error) {
-      console.error('Error saving tab views:', error);
-    }
-  },
-
-  loadTabViews: (): TabViewState => {
-    try {
-      if (typeof window !== 'undefined') {
-        const data = localStorage.getItem(STORAGE_KEYS.TAB_VIEWS);
-        return data ? JSON.parse(data) : {};
-      }
-    } catch (error) {
-      console.error('Error loading tab views:', error);
-    }
-    return {};
-  },
-
-  // Active tab operations
   saveActiveTab: (tabId: string | null): void => {
     try {
       if (typeof window !== 'undefined') {
         if (tabId) {
           localStorage.setItem(STORAGE_KEYS.ACTIVE_TAB, tabId);
-        } else {
+        }else {
           localStorage.removeItem(STORAGE_KEYS.ACTIVE_TAB);
         }
       }
-    } catch (error) {
+    }catch (error) {
       console.error('Error saving active tab:', error);
     }
   },
@@ -126,13 +97,12 @@ export const StorageService = {
       if (typeof window !== 'undefined') {
         return localStorage.getItem(STORAGE_KEYS.ACTIVE_TAB);
       }
-    } catch (error) {
+    }catch (error) {
       console.error('Error loading active tab:', error);
     }
     return null;
   },
 
-  // Clear all data
   clearAll: (): void => {
     try {
       if (typeof window !== 'undefined') {
@@ -140,7 +110,7 @@ export const StorageService = {
           localStorage.removeItem(key);
         });
       }
-    } catch (error) {
+    }catch (error) {
       console.error('Error clearing storage:', error);
     }
   },

@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Settings } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Plus, Settings, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { JsonEditor } from "@/components/JsonEditor";
 import { JsonDisplay } from "@/components/JsonDisplay";
-import { JsonRawView } from "@/components/JsonRawView";
 import { TabItem } from "@/components/TabItem";
 import { ThemeSelector } from "@/components/ThemeSelector";
 import { NewTabDialog } from "@/components/NewTabDialog";
@@ -21,41 +20,25 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Trash2 } from "lucide-react";
 import { KeyboardHelpDialog } from "@/components/KeyboardHelpDialog";
 
 export function JsonViewer() {
   const {
     state,
-    tabViewModes,
     addTab,
     updateTab,
     deleteTab,
     setActiveTab,
     duplicateTab,
     setTheme,
-    setTabViewMode,
     getTab,
   } = useApp();
 
   const [showSettings, setShowSettings] = useState(false);
   const activeTab = state.activeTabId ? getTab(state.activeTabId) : null;
-  const currentViewMode = state.activeTabId
-    ? tabViewModes[state.activeTabId] || state.settings.defaultView
-    : "formatted";
-
-  // Handle first tab creation hint
   const isEmpty = state.tabs.length === 0;
-
-  const handleToggleViewMode = (): void => {
-    if (state.activeTabId) {
-      const newMode = currentViewMode === "raw" ? "formatted" : "raw";
-      setTabViewMode(state.activeTabId, newMode);
-    }
-  };
 
   const handleClearAll = (): void => {
     if (confirm("Are you sure? This will delete all tabs.")) {
@@ -64,47 +47,38 @@ export function JsonViewer() {
   };
 
   useEffect(() => {
-    // Auto-select first tab when it exists
     if (state.tabs.length > 0 && !state.activeTabId) {
       setActiveTab(state.tabs[0].id);
     }
   }, [state.tabs, state.activeTabId, setActiveTab]);
 
-  // Setup keyboard shortcuts
   useKeyboardShortcuts([
     {
       key: "n",
       ctrlKey: true,
       callback: () => {
-        // Trigger new tab dialog via ref or state
-        console.log("New tab shortcut: Ctrl+N");
+        const newTab = addTab(`Untitled ${state.tabs.length + 1}`);
+        setActiveTab(newTab.id);
       },
       description: "Create new tab",
-    },
-    {
-      key: "t",
-      ctrlKey: true,
-      callback: handleToggleViewMode,
-      description: "Toggle raw/formatted view",
     },
   ]);
 
   return (
     <GlassBackground>
-      <div className="flex flex-col h-screen">
-        {/* Header */}
-        <GlassHeader className="p-4 animate-slideDown z-10">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <div className="flex h-screen flex-col">
+        <GlassHeader className="z-10 animate-slideDown p-4">
+          <div className="mx-auto flex max-w-7xl items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md hover:shadow-lg transition-shadow duration-200">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-md transition-shadow duration-200 hover:shadow-lg">
                 <span className="text-sm font-bold text-white">{"{}"}</span>
               </div>
               <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
+                <h1 className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-2xl font-bold text-transparent dark:from-indigo-400 dark:to-purple-400">
                   JSON Viewer
                 </h1>
                 <p className="text-xs text-muted-foreground">
-                  Multi-tab JSON viewer with themes
+                  Input on the left, formatted preview on the right
                 </p>
               </div>
             </div>
@@ -117,27 +91,30 @@ export function JsonViewer() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="gap-2 liquid-glass-button border-white/20 hover:border-purple-400/50">
-                    <Settings className="w-4 h-4" />
+                    className="liquid-glass-button gap-2 border-white/20 hover:border-purple-400/50"
+                  >
+                    <Settings className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  className="w-56 liquid-glass border-white/20">
-                  <div className="p-3 space-y-4">
+                  className="liquid-glass w-56 border-white/20"
+                >
+                  <div className="space-y-4 p-3">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="auto-format">Auto-format on paste</Label>
                       <Switch id="auto-format" disabled />
                     </div>
 
                     {!isEmpty && (
-                      <div className="pt-2 border-t border-white/10">
+                      <div className="border-t border-white/10 pt-2">
                         <Button
                           variant="destructive"
                           size="sm"
                           onClick={handleClearAll}
-                          className="w-full gap-2 justify-center">
-                          <Trash2 className="w-4 h-4" />
+                          className="w-full justify-center gap-2"
+                        >
+                          <Trash2 className="h-4 w-4" />
                           Clear All Tabs
                         </Button>
                       </div>
@@ -150,19 +127,19 @@ export function JsonViewer() {
         </GlassHeader>
 
         {isEmpty ? (
-          <div className="flex-1 flex items-center justify-center animate-fadeIn p-4">
-            <div className="liquid-glass text-center space-y-6 p-8 max-w-md">
-              <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-violet-500/20 via-purple-500/20 to-fuchsia-500/20 border border-purple-400/30 flex items-center justify-center mx-auto hover:scale-110 hover:shadow-[0_0_40px_rgba(139,92,246,0.4)] transition-all duration-500">
-                <span className="text-5xl bg-gradient-to-r from-violet-500 to-fuchsia-500 bg-clip-text text-transparent">
+          <div className="animate-fadeIn flex flex-1 items-center justify-center p-4">
+            <div className="liquid-glass max-w-md space-y-6 p-8 text-center">
+              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl border border-purple-400/30 bg-gradient-to-br from-violet-500/20 via-purple-500/20 to-fuchsia-500/20 transition-all duration-500 hover:scale-110 hover:shadow-[0_0_40px_rgba(139,92,246,0.4)]">
+                <span className="bg-gradient-to-r from-violet-500 to-fuchsia-500 bg-clip-text text-5xl text-transparent">
                   {"{}"}
                 </span>
               </div>
               <div>
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 dark:from-violet-400 dark:via-purple-400 dark:to-fuchsia-400 bg-clip-text text-transparent mb-3">
+                <h2 className="mb-3 bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 bg-clip-text text-2xl font-bold text-transparent dark:from-violet-400 dark:via-purple-400 dark:to-fuchsia-400">
                   No tabs yet
                 </h2>
-                <p className="text-sm text-muted-foreground mb-6">
-                  Create your first tab to start viewing JSON
+                <p className="mb-6 text-sm text-muted-foreground">
+                  Create your first tab to start editing JSON immediately.
                 </p>
                 <NewTabDialog onCreateTab={addTab} />
               </div>
@@ -170,9 +147,8 @@ export function JsonViewer() {
           </div>
         ) : (
           <>
-            {/* Tabs Navigation */}
-            <div className="liquid-glass-subtle mx-4 mt-4 flex items-center gap-2 p-2 overflow-x-auto rounded-2xl">
-              <div className="flex gap-2 flex-1">
+            <div className="liquid-glass-subtle mx-4 mt-4 flex items-center gap-2 overflow-x-auto rounded-2xl p-2">
+              <div className="flex flex-1 gap-2">
                 {state.tabs.map((tab) => (
                   <TabItem
                     key={tab.id}
@@ -184,51 +160,48 @@ export function JsonViewer() {
                   />
                 ))}
               </div>
-              <div className="flex gap-2 flex-shrink-0 pl-2 border-l border-white/10">
+              <div className="flex shrink-0 gap-2 border-l border-white/10 pl-2">
                 <NewTabDialog onCreateTab={addTab} />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const newTab = addTab(`Untitled ${state.tabs.length + 1}`);
+                    setActiveTab(newTab.id);
+                  }}
+                  className="liquid-glass-button gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Quick tab
+                </Button>
               </div>
             </div>
 
-            {/* Main Content */}
             {activeTab && (
-              <div className="flex-1 flex overflow-hidden flex-col md:flex-row gap-4 p-4">
-                {/* Editor Section */}
-                <GlassPanel className="flex-1 flex flex-col rounded-2xl">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-foreground/90">
-                      {currentViewMode === "raw" ? "Editor" : "Formatted"}
-                    </h3>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleToggleViewMode}
-                      className="liquid-glass-button border-white/20">
-                      {currentViewMode === "raw"
-                        ? "View Formatted"
-                        : "View Raw"}
-                    </Button>
+              <div className="flex flex-1 flex-col gap-4 overflow-hidden p-4 md:flex-row">
+                <GlassPanel className="json-workspace-panel flex min-h-0 flex-1 flex-col rounded-2xl">
+                  <div className="mb-4 border-b border-white/10 pb-3">
+                    <h3 className="font-semibold text-foreground/95">JSON Input</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Paste or type JSON here. Preview updates in real-time.
+                    </p>
                   </div>
 
-                  {currentViewMode === "raw" ? (
-                    <JsonEditor
-                      value={activeTab.content}
-                      onChange={(newContent) => {
-                        updateTab(activeTab.id, { content: newContent });
-                      }}
-                    />
-                  ) : (
-                    <JsonRawView
-                      content={activeTab.content}
-                      theme={state.settings.theme}
-                    />
-                  )}
+                  <JsonEditor
+                    value={activeTab.content}
+                    onChange={(newContent) => {
+                      updateTab(activeTab.id, { content: newContent });
+                    }}
+                  />
                 </GlassPanel>
 
-                {/* Display Section */}
-                <GlassPanel className="flex-1 flex flex-col rounded-2xl">
-                  <h3 className="font-semibold mb-4 text-foreground/90">
-                    Preview
-                  </h3>
+                <GlassPanel className="json-workspace-panel flex min-h-0 flex-1 flex-col rounded-2xl">
+                  <div className="mb-4 border-b border-white/10 pb-3">
+                    <h3 className="font-semibold text-foreground/95">JSON Preview</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Explore structured JSON tree with expand and collapse controls.
+                    </p>
+                  </div>
                   <JsonDisplay
                     content={activeTab.content}
                     theme={state.settings.theme}

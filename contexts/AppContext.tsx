@@ -2,19 +2,11 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import {
-  AppSettings,
-  AppState,
-  JsonTab,
-  TabViewState,
-  ThemeType,
-  ViewMode,
-} from '@/types';
+import { AppState, JsonTab, ThemeType } from '@/types';
 import { StorageService } from '@/lib/storage';
 
 interface AppContextType {
   state: AppState;
-  tabViewModes: TabViewState;
   addTab: (title: string, description?: string) => JsonTab;
   updateTab: (
     id: string,
@@ -24,8 +16,6 @@ interface AppContextType {
   setActiveTab: (id: string | null) => void;
   duplicateTab: (id: string) => void;
   setTheme: (theme: ThemeType) => void;
-  setDefaultView: (view: ViewMode) => void;
-  setTabViewMode: (tabId: string, mode: ViewMode) => void;
   getTab: (id: string) => JsonTab | undefined;
 }
 
@@ -43,34 +33,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
   });
 
-  const [tabViewModes, setTabViewModes] = useState<TabViewState>({});
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load initial state from localStorage
   useEffect(() => {
     const saved = StorageService.loadAppState();
     if (saved) {
       setState(saved);
     }
-
-    const savedTabViews = StorageService.loadTabViews();
-    setTabViewModes(savedTabViews);
     setIsLoaded(true);
   }, []);
 
-  // Save state to localStorage whenever it changes
   useEffect(() => {
     if (isLoaded) {
       StorageService.saveAppState(state);
     }
   }, [state, isLoaded]);
-
-  // Save tab view modes
-  useEffect(() => {
-    if (isLoaded) {
-      StorageService.saveTabViews(tabViewModes);
-    }
-  }, [tabViewModes, isLoaded]);
 
   const addTab = (title: string, description?: string): JsonTab => {
     const newTab: JsonTab = {
@@ -98,9 +75,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({
       ...prev,
       tabs: prev.tabs.map((tab) =>
-        tab.id === id
-          ? { ...tab, ...updates, updatedAt: Date.now() }
-          : tab
+        tab.id === id ? { ...tab, ...updates, updatedAt: Date.now() } : tab
       ),
     }));
   };
@@ -113,13 +88,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (prev.activeTabId === id) {
         newActiveTabId = newTabs.length > 0 ? newTabs[0].id : null;
       }
-
-      // Clean up tab view mode
-      setTabViewModes((prev) => {
-        const updated = { ...prev };
-        delete updated[id];
-        return updated;
-      });
 
       return {
         ...prev,
@@ -142,7 +110,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const newTab: JsonTab = {
         ...tabToDuplicate,
         id: uuidv4(),
-        title: `${tabToDuplicate.title} (Copy)`,
+        title: `${tabToDuplicate.title}(Copy)`,
         createdAt: Date.now(),
         updatedAt: Date.now(),
       };
@@ -152,14 +120,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         tabs: [...prev.tabs, newTab],
         activeTabId: newTab.id,
       }));
-
-      // Copy view mode
-      if (tabViewModes[id]) {
-        setTabViewModes((prev) => ({
-          ...prev,
-          [newTab.id]: tabViewModes[id],
-        }));
-      }
     }
   };
 
@@ -167,20 +127,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({
       ...prev,
       settings: { ...prev.settings, theme },
-    }));
-  };
-
-  const setDefaultView = (view: ViewMode): void => {
-    setState((prev) => ({
-      ...prev,
-      settings: { ...prev.settings, defaultView: view },
-    }));
-  };
-
-  const setTabViewMode = (tabId: string, mode: ViewMode): void => {
-    setTabViewModes((prev) => ({
-      ...prev,
-      [tabId]: mode,
     }));
   };
 
@@ -196,15 +142,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     <AppContext.Provider
       value={{
         state,
-        tabViewModes,
         addTab,
         updateTab,
         deleteTab,
         setActiveTab,
         duplicateTab,
         setTheme,
-        setDefaultView,
-        setTabViewMode,
         getTab,
       }}
     >
