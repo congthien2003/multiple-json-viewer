@@ -220,12 +220,7 @@ export function JsonViewer() {
                 </GlassPanel>
 
                 <GlassPanel className="json-workspace-panel flex min-h-0 flex-1 flex-col rounded-2xl">
-                  <div className="mb-4 border-b border-white/10 pb-3">
-                    <h3 className="font-semibold text-foreground/95">JSON Preview</h3>
-                    <p className="text-xs text-muted-foreground">
-                      Explore structured JSON tree with expand and collapse controls.
-                    </p>
-                  </div>
+
                   <JsonDisplay
                     content={activeTab.content}
                     theme={state.settings.theme}

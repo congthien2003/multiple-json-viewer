@@ -1,4 +1,4 @@
-export type ThemeType = 'light' | 'dark' | 'monokai' | 'dracula';
+export type ThemeType = 'light' | 'dark';
 
 export interface JsonTab {
   id: string;
