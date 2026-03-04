@@ -13,8 +13,20 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogFooter,
+} from "@/components/ui/dialog";
+import {
 	generateCSharpClasses,
 	generateTypeScriptInterfaces,
+	generateJavaClasses,
+	generatePythonModels,
+	generateGoStructs,
+	generateKotlinDataClasses,
+	generateDartClasses,
 } from "@/lib/json-codegen";
 import type { ThemeType } from "@/types";
 import { cn } from "@/lib/utils";
@@ -27,6 +39,11 @@ interface JsonDisplayProps {
 const ROOT_MODEL_NAME = "Model";
 
 export function JsonDisplay({ content, theme }: JsonDisplayProps) {
+	const [exportPreview, setExportPreview] = useState<{
+		code: string;
+		title: string;
+		language: string;
+	} | null>(null);
 	const parsedResult = useMemo(() => {
 		if (!content.trim()) {
 			return {
@@ -59,7 +76,7 @@ export function JsonDisplay({ content, theme }: JsonDisplayProps) {
 		toast.success("Copied to clipboard!", { duration: 2000 });
 	};
 
-	const copyExport = async (format: "csharp" | "typescript"): Promise<void> => {
+	const handleExportClick = (format: string): void => {
 		if (
 			parsedResult.isEmpty ||
 			parsedResult.error ||
@@ -71,25 +88,62 @@ export function JsonDisplay({ content, theme }: JsonDisplayProps) {
 			return;
 		}
 
-		try {
-			const generated =
-				format === "csharp"
-					? generateCSharpClasses(parsedResult.data, ROOT_MODEL_NAME)
-					: generateTypeScriptInterfaces(parsedResult.data, ROOT_MODEL_NAME);
+		const generators: Record<string, (v: unknown, n: string) => string> = {
+			csharp: generateCSharpClasses,
+			typescript: generateTypeScriptInterfaces,
+			java: generateJavaClasses,
+			python: generatePythonModels,
+			go: generateGoStructs,
+			kotlin: generateKotlinDataClasses,
+			dart: generateDartClasses,
+		};
 
-			await navigator.clipboard.writeText(generated);
-			toast.success(
-				format === "csharp"
-					? "C# model copied to clipboard."
-					: "TypeScript interface copied to clipboard.",
-				{ duration: 2500 },
-			);
+		const labels: Record<string, string> = {
+			csharp: "C# model",
+			typescript: "TypeScript interface",
+			java: "Java class",
+			python: "Python model",
+			go: "Go struct",
+			kotlin: "Kotlin data class",
+			dart: "Dart class",
+		};
+
+		const langs: Record<string, string> = {
+			csharp: "csharp",
+			typescript: "typescript",
+			java: "java",
+			python: "python",
+			go: "go",
+			kotlin: "kotlin",
+			dart: "dart",
+		};
+
+		try {
+			const gen = generators[format];
+			if (!gen) return;
+			const generated = gen(parsedResult.data, ROOT_MODEL_NAME);
+
+			// Open preview modal instead of direct copy
+			setExportPreview({
+				code: generated,
+				title: labels[format],
+				language: langs[format] || "javascript",
+			});
 		} catch {
 			toast.error(
-				"Failed to export model. Please try with another JSON shape.",
+				"Failed to generate model. Please try with another JSON shape.",
 				{ duration: 3000 },
 			);
 		}
+	};
+
+	const confirmExportCopy = async (): Promise<void> => {
+		if (!exportPreview) return;
+		await navigator.clipboard.writeText(exportPreview.code);
+		toast.success(`${exportPreview.title} copied to clipboard.`, {
+			duration: 2500,
+		});
+		setExportPreview(null);
 	};
 
 	const formattedJsonString = parsedResult.data
@@ -136,11 +190,26 @@ export function JsonDisplay({ content, theme }: JsonDisplayProps) {
 							</Button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end" className="w-60">
-							<DropdownMenuItem onClick={() => copyExport("csharp")}>
-								Export C# Class (Model)
+							<DropdownMenuItem onClick={() => handleExportClick("typescript")}>
+								TypeScript Interface
 							</DropdownMenuItem>
-							<DropdownMenuItem onClick={() => copyExport("typescript")}>
-								Export TypeScript Interface (Model)
+							<DropdownMenuItem onClick={() => handleExportClick("csharp")}>
+								C# Class
+							</DropdownMenuItem>
+							<DropdownMenuItem onClick={() => handleExportClick("java")}>
+								Java POJO
+							</DropdownMenuItem>
+							<DropdownMenuItem onClick={() => handleExportClick("python")}>
+								Python Pydantic
+							</DropdownMenuItem>
+							<DropdownMenuItem onClick={() => handleExportClick("go")}>
+								Go Struct
+							</DropdownMenuItem>
+							<DropdownMenuItem onClick={() => handleExportClick("kotlin")}>
+								Kotlin Data Class
+							</DropdownMenuItem>
+							<DropdownMenuItem onClick={() => handleExportClick("dart")}>
+								Dart Class
 							</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>
@@ -172,6 +241,45 @@ export function JsonDisplay({ content, theme }: JsonDisplayProps) {
 					}}
 				/>
 			</div>
+
+			<Dialog
+				open={!!exportPreview}
+				onOpenChange={(open) => !open && setExportPreview(null)}>
+				<DialogContent className="!sm:max-w-xl !max-w-5xl max-h-[85vh] flex flex-col">
+					<DialogHeader>
+						<DialogTitle>Export Preview: {exportPreview?.title}</DialogTitle>
+					</DialogHeader>
+
+					<div className="flex-1 min-h-0 overflow-scroll rounded-md border">
+						{exportPreview && (
+							<CodeMirror
+								value={exportPreview.code}
+								height="100%"
+								theme={theme === "light" ? "light" : "dark"}
+								className="h-full text-sm font-mono [&>.cm-editor]:h-full"
+								readOnly={true}
+								editable={false}
+								basicSetup={{
+									lineNumbers: true,
+									highlightActiveLine: false,
+								}}
+							/>
+						)}
+					</div>
+
+					<DialogFooter>
+						<div className="flex gap-2 w-full justify-end">
+							<Button variant="outline" onClick={() => setExportPreview(null)}>
+								Close
+							</Button>
+							<Button onClick={confirmExportCopy} className="gap-2">
+								<Copy className="h-4 w-4" />
+								Copy to Clipboard
+							</Button>
+						</div>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }

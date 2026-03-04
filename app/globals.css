@@ -212,4 +212,96 @@ body {
 	.animate-scaleIn {
 		animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 	}
+
+	/* CodeMirror MergeView Theme Overrides */
+	.cm-mergeView,
+	.cm-mergeView .cm-editor {
+		background-color: var(--background) !important;
+		color: var(--foreground) !important;
+	}
+
+	/* CodeMirror General Editor Overrides (Fix for light theme minify bug) */
+	.cm-editor.cm-theme-light {
+		background-color: var(--background) !important;
+		color: var(--foreground) !important;
+	}
+	.cm-editor.cm-theme-dark {
+		background-color: var(--background) !important;
+		color: var(--foreground) !important;
+	}
+
+	.cm-mergeView .cm-gutters {
+		background-color: var(--muted) !important;
+		color: var(--muted-foreground) !important;
+		border-right: 1px solid var(--border) !important;
+	}
+
+	/* Removed left/right unified borders to blend better and enforce strict 50/50 sizing */
+	.cm-mergeView .cm-merge-a,
+	.cm-mergeView .cm-merge-b {
+		border: none !important;
+		flex: 1 1 0 !important;
+		min-width: 0 !important;
+		max-width: 50% !important;
+		overflow: hidden !important;
+	}
+
+	/* Deleted lines (left side) - Explicit background */
+	.cm-mergeView .cm-merge-a .cm-changedLine {
+		background-color: color-mix(
+			in oklch,
+			var(--destructive) 15%,
+			var(--background)
+		) !important;
+	}
+	/* Inserted lines (right side) - Explicit background */
+	.cm-mergeView .cm-merge-b .cm-changedLine {
+		background-color: color-mix(
+			in oklch,
+			var(--primary) 15%,
+			var(--background)
+		) !important;
+	}
+
+	/* Deleted text within a line */
+	.cm-mergeView .cm-merge-a .cm-changedText {
+		background-color: color-mix(
+			in oklch,
+			var(--destructive) 35%,
+			var(--background)
+		) !important;
+		background-image: none !important;
+		border-radius: 2px;
+	}
+	/* Inserted text within a line */
+	.cm-mergeView .cm-merge-b .cm-changedText {
+		background-color: color-mix(
+			in oklch,
+			var(--primary) 35%,
+			var(--background)
+		) !important;
+		background-image: none !important;
+		border-radius: 2px;
+	}
+
+	/* Spacer (alignment filler) */
+	.cm-mergeView .cm-merge-spacer {
+		background-color: color-mix(
+			in oklch,
+			var(--muted) 50%,
+			var(--background)
+		) !important;
+		background-image: none !important;
+	}
+
+	/* Collapse unchanged button/margin */
+	.cm-mergeView .cm-collapsedLines {
+		background-color: var(--muted) !important;
+		border-radius: 4px;
+		margin: 4px;
+		padding: 4px 0;
+		text-align: center;
+		color: var(--muted-foreground) !important;
+		border: 1px solid var(--border) !important;
+	}
 }

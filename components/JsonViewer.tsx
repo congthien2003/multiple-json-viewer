@@ -2,10 +2,13 @@
 
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { Plus, Settings, Trash2 } from "lucide-react";
+import { Plus, Settings, Trash2, GitCompareArrows } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { JsonEditor } from "@/components/JsonEditor";
 import { JsonDisplay } from "@/components/JsonDisplay";
+import { JsonPathQuery } from "@/components/JsonPathQuery";
+import { JsonDiffViewer } from "@/components/JsonDiffViewer";
+import { DiffTabSelector } from "@/components/DiffTabSelector";
 import { TabItem } from "@/components/TabItem";
 import { ThemeSelector } from "@/components/ThemeSelector";
 import { NewTabDialog } from "@/components/NewTabDialog";
@@ -34,8 +37,16 @@ export function JsonViewer() {
 	} = useApp();
 
 	const [showSettings, setShowSettings] = useState(false);
+	const [jsonPathResult, setJsonPathResult] = useState<string | null>(null);
+	const [compareMode, setCompareMode] = useState(false);
+	const [leftTabId, setLeftTabId] = useState<string | null>(null);
+	const [rightTabId, setRightTabId] = useState<string | null>(null);
+
 	const activeTab = state.activeTabId ? getTab(state.activeTabId) : null;
 	const isEmpty = state.tabs.length === 0;
+
+	const leftTab = leftTabId ? getTab(leftTabId) : null;
+	const rightTab = rightTabId ? getTab(rightTabId) : null;
 
 	const handleCreateTab = (title: string, description?: string): void => {
 		addTab(title, description);
@@ -68,6 +79,14 @@ export function JsonViewer() {
 		}
 	};
 
+	const toggleCompareMode = (): void => {
+		if (!compareMode && state.tabs.length >= 2) {
+			setLeftTabId(state.tabs[0].id);
+			setRightTabId(state.tabs[1].id);
+		}
+		setCompareMode(!compareMode);
+	};
+
 	useEffect(() => {
 		if (state.tabs.length > 0 && !state.activeTabId) {
 			setActiveTab(state.tabs[0].id);
@@ -91,7 +110,7 @@ export function JsonViewer() {
 		<div className="min-h-screen bg-background bg-gradient-to-br from-background/90 to-background">
 			<div className="flex h-screen flex-col">
 				<header className="z-10 animate-slideDown p-4 border-b bg-card shadow-sm">
-					<div className="mx-auto flex max-w-7xl items-center justify-between">
+					<div className="flex items-center justify-between">
 						<div className="flex items-center gap-3">
 							<div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-md transition-shadow duration-200 hover:shadow-lg">
 								<span className="text-sm font-bold text-white">{"{}"}</span>
@@ -107,6 +126,16 @@ export function JsonViewer() {
 						</div>
 
 						<div className="flex items-center gap-2">
+							{state.tabs.length >= 2 && (
+								<Button
+									variant={compareMode ? "default" : "outline"}
+									size="sm"
+									onClick={toggleCompareMode}
+									className="gap-2">
+									<GitCompareArrows className="h-4 w-4" />
+									Compare
+								</Button>
+							)}
 							<ThemeSelector value={state.settings.theme} onChange={setTheme} />
 							<KeyboardHelpDialog />
 							<DropdownMenu open={showSettings} onOpenChange={setShowSettings}>
@@ -163,59 +192,98 @@ export function JsonViewer() {
 					</div>
 				) : (
 					<>
-						<div className="mx-4 mt-4 flex items-center gap-2 overflow-x-auto rounded-xl border bg-card p-2 shadow-sm">
-							<div className="flex flex-1 gap-2">
-								{state.tabs.map((tab) => (
-									<TabItem
-										key={tab.id}
-										tab={tab}
-										isActive={state.activeTabId === tab.id}
-										onSelect={() => setActiveTab(tab.id)}
-										onDuplicate={() => handleDuplicateTab(tab.id)}
-										onDelete={() => handleDeleteTab(tab.id)}
-									/>
-								))}
+						{!compareMode && (
+							<div className="mx-4 mt-4 flex items-center gap-2 overflow-x-auto rounded-xl border bg-card p-2 shadow-sm">
+								<div className="flex flex-1 gap-2">
+									{state.tabs.map((tab) => (
+										<TabItem
+											key={tab.id}
+											tab={tab}
+											isActive={state.activeTabId === tab.id}
+											onSelect={() => setActiveTab(tab.id)}
+											onDuplicate={() => handleDuplicateTab(tab.id)}
+											onDelete={() => handleDeleteTab(tab.id)}
+										/>
+									))}
+								</div>
+								<div className="flex shrink-0 gap-2 border-l border-white/10 pl-2">
+									<NewTabDialog onCreateTab={handleCreateTab} />
+									<Button
+										size="sm"
+										variant="outline"
+										onClick={handleQuickTab}
+										className="gap-2">
+										<Plus className="h-4 w-4" />
+										Quick tab
+									</Button>
+								</div>
 							</div>
-							<div className="flex shrink-0 gap-2 border-l border-white/10 pl-2">
-								<NewTabDialog onCreateTab={handleCreateTab} />
-								<Button
-									size="sm"
-									variant="outline"
-									onClick={handleQuickTab}
-									className="gap-2">
-									<Plus className="h-4 w-4" />
-									Quick tab
-								</Button>
-							</div>
-						</div>
+						)}
 
-						{activeTab && (
-							<div className="flex flex-1 flex-col gap-4 overflow-hidden p-4 md:flex-row">
-								<div className="flex min-h-0 flex-1 flex-col rounded-xl border bg-card p-4 shadow-sm">
-									<div className="mb-4 border-b border-border/40 pb-3">
-										<h3 className="font-semibold text-foreground/95">
-											JSON Input
-										</h3>
-										<p className="text-xs text-muted-foreground">
-											Paste or type JSON here. Preview updates in real-time.
+						{compareMode ? (
+							<div className="flex flex-1 flex-col overflow-hidden p-4">
+								<div className="mb-4 flex items-center justify-between rounded-xl border bg-card p-3 shadow-sm">
+									<DiffTabSelector
+										tabs={state.tabs}
+										leftTabId={leftTabId}
+										rightTabId={rightTabId}
+										onLeftChange={setLeftTabId}
+										onRightChange={setRightTabId}
+									/>
+								</div>
+								{leftTab && rightTab ? (
+									<div className="flex min-h-0 flex-1 rounded-xl border bg-card shadow-sm overflow-hidden">
+										<JsonDiffViewer
+											leftContent={leftTab.content}
+											rightContent={rightTab.content}
+											leftLabel={leftTab.title}
+											rightLabel={rightTab.title}
+											theme={state.settings.theme}
+										/>
+									</div>
+								) : (
+									<div className="flex flex-1 items-center justify-center rounded-xl border border-dashed bg-muted/30 p-8">
+										<p className="text-sm text-muted-foreground">
+											Select two tabs above to compare their JSON content.
 										</p>
 									</div>
-
-									<JsonEditor
-										value={activeTab.content}
-										onChange={(newContent) => {
-											updateTab(activeTab.id, { content: newContent });
-										}}
-									/>
-								</div>
-
-								<div className="flex min-h-0 flex-1 flex-col rounded-xl border bg-card p-4 shadow-sm">
-									<JsonDisplay
-										content={activeTab.content}
-										theme={state.settings.theme}
-									/>
-								</div>
+								)}
 							</div>
+						) : (
+							activeTab && (
+								<div className="gap-4 overflow-hidden p-4 grid grid-cols-1 md:grid-cols-2 ">
+									<div className="flex min-h-0 flex-1 flex-col rounded-xl border bg-card p-4 shadow-sm">
+										<div className="mb-4 border-b border-border/40 pb-3">
+											<h3 className="font-semibold text-foreground/95">
+												JSON Input
+											</h3>
+											<p className="text-xs text-muted-foreground">
+												Paste or type JSON here. Preview updates in real-time.
+											</p>
+										</div>
+
+										<JsonEditor
+											value={activeTab.content}
+											onChange={(newContent) => {
+												updateTab(activeTab.id, { content: newContent });
+											}}
+										/>
+									</div>
+
+									<div className="flex min-h-0 flex-1 flex-col rounded-xl border bg-card p-4 shadow-sm">
+										<div className="mb-3">
+											<JsonPathQuery
+												content={activeTab.content}
+												onResult={setJsonPathResult}
+											/>
+										</div>
+										<JsonDisplay
+											content={jsonPathResult ?? activeTab.content}
+											theme={state.settings.theme}
+										/>
+									</div>
+								</div>
+							)
 						)}
 					</>
 				)}
