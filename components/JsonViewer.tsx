@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 import { Plus, Settings, Trash2, GitCompareArrows } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { JsonPathQuery } from "@/components/JsonPathQuery";
 import { JsonDiffViewer } from "@/components/JsonDiffViewer";
 import { DiffTabSelector } from "@/components/DiffTabSelector";
 import { TabItem } from "@/components/TabItem";
+import { decompressFromUrl } from "@/lib/json-share";
 import { ThemeSelector } from "@/components/ThemeSelector";
 import { NewTabDialog } from "@/components/NewTabDialog";
 import { useApp } from "@/contexts/AppContext";
@@ -93,6 +95,35 @@ export function JsonViewer() {
 		}
 	}, [state.tabs, state.activeTabId, setActiveTab]);
 
+	const searchParams = useSearchParams();
+	const hasDecoded = useRef(false);
+
+	// Handle shared URL: decompress ?data= parameter into a new tab
+	useEffect(() => {
+		const dataParam = searchParams.get("data");
+		if (!dataParam || hasDecoded.current) return;
+
+		hasDecoded.current = true;
+
+		decompressFromUrl(dataParam)
+			.then((content) => {
+				// Validate it's real JSON
+				JSON.parse(content);
+				const tab = addTab("Shared JSON");
+				updateTab(tab.id, { content });
+				toast.success("Shared JSON loaded!", { duration: 2500 });
+
+				// Clean up URL without reload
+				const url = new URL(window.location.href);
+				url.searchParams.delete("data");
+				window.history.replaceState({}, "", url.toString());
+			})
+			.catch(() => {
+				toast.error("Failed to load shared JSON.", { duration: 3000 });
+			});
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
+
 	useKeyboardShortcuts([
 		{
 			key: "n",
@@ -113,14 +144,17 @@ export function JsonViewer() {
 					<div className="flex items-center justify-between">
 						<div className="flex items-center gap-3">
 							<div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-md transition-shadow duration-200 hover:shadow-lg">
-								<span className="text-sm font-bold text-white">{"{}"}</span>
+								<span className="text-sm font-bold text-white">
+									{"{}"}
+								</span>
 							</div>
 							<div>
 								<h1 className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-2xl font-bold text-transparent dark:from-indigo-400 dark:to-purple-400">
 									JSON Viewer
 								</h1>
 								<p className="text-xs text-muted-foreground">
-									Input on the left, formatted preview on the right
+									Input on the left, formatted preview on the
+									right
 								</p>
 							</div>
 						</div>
@@ -128,7 +162,9 @@ export function JsonViewer() {
 						<div className="flex items-center gap-2">
 							{state.tabs.length >= 2 && (
 								<Button
-									variant={compareMode ? "default" : "outline"}
+									variant={
+										compareMode ? "default" : "outline"
+									}
 									size="sm"
 									onClick={toggleCompareMode}
 									className="gap-2">
@@ -136,9 +172,14 @@ export function JsonViewer() {
 									Compare
 								</Button>
 							)}
-							<ThemeSelector value={state.settings.theme} onChange={setTheme} />
+							<ThemeSelector
+								value={state.settings.theme}
+								onChange={setTheme}
+							/>
 							<KeyboardHelpDialog />
-							<DropdownMenu open={showSettings} onOpenChange={setShowSettings}>
+							<DropdownMenu
+								open={showSettings}
+								onOpenChange={setShowSettings}>
 								<DropdownMenuTrigger asChild>
 									<Button
 										variant="outline"
@@ -147,10 +188,14 @@ export function JsonViewer() {
 										<Settings className="h-4 w-4" />
 									</Button>
 								</DropdownMenuTrigger>
-								<DropdownMenuContent align="end" className="w-56">
+								<DropdownMenuContent
+									align="end"
+									className="w-56">
 									<div className="space-y-4 p-3">
 										<div className="flex items-center justify-between">
-											<Label htmlFor="auto-format">Auto-format on paste</Label>
+											<Label htmlFor="auto-format">
+												Auto-format on paste
+											</Label>
 											<Switch id="auto-format" disabled />
 										</div>
 
@@ -177,14 +222,17 @@ export function JsonViewer() {
 					<div className="animate-fadeIn flex flex-1 items-center justify-center p-4">
 						<div className="rounded-2xl border bg-card max-w-md shadow-sm space-y-6 p-8 text-center">
 							<div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl border border-primary/20 bg-primary/10 transition-all duration-500 hover:scale-110 hover:shadow-md">
-								<span className="text-5xl text-primary font-bold">{"{}"}</span>
+								<span className="text-5xl text-primary font-bold">
+									{"{}"}
+								</span>
 							</div>
 							<div>
 								<h2 className="mb-3 text-foreground text-2xl font-bold">
 									No tabs yet
 								</h2>
 								<p className="mb-6 text-sm text-muted-foreground">
-									Create your first tab to start editing JSON immediately.
+									Create your first tab to start editing JSON
+									immediately.
 								</p>
 								<NewTabDialog onCreateTab={handleCreateTab} />
 							</div>
@@ -199,15 +247,25 @@ export function JsonViewer() {
 										<TabItem
 											key={tab.id}
 											tab={tab}
-											isActive={state.activeTabId === tab.id}
-											onSelect={() => setActiveTab(tab.id)}
-											onDuplicate={() => handleDuplicateTab(tab.id)}
-											onDelete={() => handleDeleteTab(tab.id)}
+											isActive={
+												state.activeTabId === tab.id
+											}
+											onSelect={() =>
+												setActiveTab(tab.id)
+											}
+											onDuplicate={() =>
+												handleDuplicateTab(tab.id)
+											}
+											onDelete={() =>
+												handleDeleteTab(tab.id)
+											}
 										/>
 									))}
 								</div>
 								<div className="flex shrink-0 gap-2 border-l border-white/10 pl-2">
-									<NewTabDialog onCreateTab={handleCreateTab} />
+									<NewTabDialog
+										onCreateTab={handleCreateTab}
+									/>
 									<Button
 										size="sm"
 										variant="outline"
@@ -244,7 +302,8 @@ export function JsonViewer() {
 								) : (
 									<div className="flex flex-1 items-center justify-center rounded-xl border border-dashed bg-muted/30 p-8">
 										<p className="text-sm text-muted-foreground">
-											Select two tabs above to compare their JSON content.
+											Select two tabs above to compare
+											their JSON content.
 										</p>
 									</div>
 								)}
@@ -258,14 +317,17 @@ export function JsonViewer() {
 												JSON Input
 											</h3>
 											<p className="text-xs text-muted-foreground">
-												Paste or type JSON here. Preview updates in real-time.
+												Paste or type JSON here. Preview
+												updates in real-time.
 											</p>
 										</div>
 
 										<JsonEditor
 											value={activeTab.content}
 											onChange={(newContent) => {
-												updateTab(activeTab.id, { content: newContent });
+												updateTab(activeTab.id, {
+													content: newContent,
+												});
 											}}
 										/>
 									</div>
@@ -278,7 +340,10 @@ export function JsonViewer() {
 											/>
 										</div>
 										<JsonDisplay
-											content={jsonPathResult ?? activeTab.content}
+											content={
+												jsonPathResult ??
+												activeTab.content
+											}
 											theme={state.settings.theme}
 										/>
 									</div>

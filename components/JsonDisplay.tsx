@@ -30,6 +30,18 @@ import {
 } from "@/lib/json-codegen";
 import type { ThemeType } from "@/types";
 import { cn } from "@/lib/utils";
+import { JsonChartPanel } from "@/components/JsonChartPanel";
+import { JsonSizeHeatmap } from "@/components/JsonSizeHeatmap";
+import { ShareButton } from "@/components/ShareButton";
+import {
+	TypescriptIcon,
+	CSharpIcon,
+	JavaIcon,
+	PythonIcon,
+	GoIcon,
+	KotlinIcon,
+	DartIcon,
+} from "@/components/LanguageIcons";
 
 interface JsonDisplayProps {
 	content: string;
@@ -62,8 +74,7 @@ export function JsonDisplay({ content, theme }: JsonDisplayProps) {
 		} catch {
 			return {
 				data: null as unknown,
-				error:
-					"Invalid JSON. Please check commas, brackets, and key/value pairs.",
+				error: "Invalid JSON. Please check commas, brackets, and key/value pairs.",
 				isEmpty: false,
 			};
 		}
@@ -154,7 +165,8 @@ export function JsonDisplay({ content, theme }: JsonDisplayProps) {
 		return (
 			<div className="flex flex-1 items-center justify-center rounded-xl border border-dashed border-white/20 bg-black/10 p-8 text-center">
 				<p className="text-sm text-muted-foreground">
-					No preview yet. Paste JSON in the Input panel to see formatted output.
+					No preview yet. Paste JSON in the Input panel to see
+					formatted output.
 				</p>
 			</div>
 		);
@@ -184,35 +196,62 @@ export function JsonDisplay({ content, theme }: JsonDisplayProps) {
 				<div className="flex items-center gap-2">
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
-							<Button variant="ghost" size="sm" className="gap-2 border">
+							<Button
+								variant="ghost"
+								size="sm"
+								className="gap-2 border">
 								<Download className="h-4 w-4" />
 								Export
 							</Button>
 						</DropdownMenuTrigger>
-						<DropdownMenuContent align="end" className="w-60">
-							<DropdownMenuItem onClick={() => handleExportClick("typescript")}>
-								TypeScript Interface
+						<DropdownMenuContent align="end" className="w-56">
+							<DropdownMenuItem
+								className="gap-2 cursor-pointer"
+								onClick={() => handleExportClick("typescript")}>
+								<TypescriptIcon className="h-4 w-4" />
+								<span>TypeScript Interface</span>
 							</DropdownMenuItem>
-							<DropdownMenuItem onClick={() => handleExportClick("csharp")}>
-								C# Class
+							<DropdownMenuItem
+								className="gap-2 cursor-pointer"
+								onClick={() => handleExportClick("csharp")}>
+								<CSharpIcon className="h-4 w-4" />
+								<span>C# Class</span>
 							</DropdownMenuItem>
-							<DropdownMenuItem onClick={() => handleExportClick("java")}>
-								Java POJO
+							<DropdownMenuItem
+								className="gap-2 cursor-pointer"
+								onClick={() => handleExportClick("java")}>
+								<JavaIcon className="h-4 w-4" />
+								<span>Java POJO</span>
 							</DropdownMenuItem>
-							<DropdownMenuItem onClick={() => handleExportClick("python")}>
-								Python Pydantic
+							<DropdownMenuItem
+								className="gap-2 cursor-pointer"
+								onClick={() => handleExportClick("python")}>
+								<PythonIcon className="h-4 w-4" />
+								<span>Python Pydantic</span>
 							</DropdownMenuItem>
-							<DropdownMenuItem onClick={() => handleExportClick("go")}>
-								Go Struct
+							<DropdownMenuItem
+								className="gap-2 cursor-pointer"
+								onClick={() => handleExportClick("go")}>
+								<GoIcon className="h-4 w-4" />
+								<span>Go Struct</span>
 							</DropdownMenuItem>
-							<DropdownMenuItem onClick={() => handleExportClick("kotlin")}>
-								Kotlin Data Class
+							<DropdownMenuItem
+								className="gap-2 cursor-pointer"
+								onClick={() => handleExportClick("kotlin")}>
+								<KotlinIcon className="h-4 w-4" />
+								<span>Kotlin Data Class</span>
 							</DropdownMenuItem>
-							<DropdownMenuItem onClick={() => handleExportClick("dart")}>
-								Dart Class
+							<DropdownMenuItem
+								className="gap-2 cursor-pointer"
+								onClick={() => handleExportClick("dart")}>
+								<DartIcon className="h-4 w-4" />
+								<span>Dart Class</span>
 							</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>
+					<JsonChartPanel data={parsedResult.data} />
+					<JsonSizeHeatmap data={parsedResult.data} />
+					<ShareButton content={content} />
 					<Button
 						variant="ghost"
 						size="sm"
@@ -247,7 +286,9 @@ export function JsonDisplay({ content, theme }: JsonDisplayProps) {
 				onOpenChange={(open) => !open && setExportPreview(null)}>
 				<DialogContent className="!sm:max-w-xl !max-w-5xl max-h-[85vh] flex flex-col">
 					<DialogHeader>
-						<DialogTitle>Export Preview: {exportPreview?.title}</DialogTitle>
+						<DialogTitle>
+							Export Preview: {exportPreview?.title}
+						</DialogTitle>
 					</DialogHeader>
 
 					<div className="flex-1 min-h-0 overflow-scroll rounded-md border">
@@ -269,10 +310,14 @@ export function JsonDisplay({ content, theme }: JsonDisplayProps) {
 
 					<DialogFooter>
 						<div className="flex gap-2 w-full justify-end">
-							<Button variant="outline" onClick={() => setExportPreview(null)}>
+							<Button
+								variant="outline"
+								onClick={() => setExportPreview(null)}>
 								Close
 							</Button>
-							<Button onClick={confirmExportCopy} className="gap-2">
+							<Button
+								onClick={confirmExportCopy}
+								className="gap-2">
 								<Copy className="h-4 w-4" />
 								Copy to Clipboard
 							</Button>
