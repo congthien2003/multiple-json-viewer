@@ -1,20 +1,20 @@
-export type ThemeType = 'light' | 'dark';
+export type ThemeType = "light" | "dark" | "monokai" | "dracula";
 
 export interface JsonTab {
-  id: string;
-  title: string;
-  description?: string;
-  content: string;
-  createdAt: number;
-  updatedAt: number;
+	id: string;
+	title: string;
+	description?: string;
+	content: string;
+	createdAt: number;
+	updatedAt: number;
 }
 
 export interface AppSettings {
-  theme: ThemeType;
+	theme: ThemeType;
 }
 
 export interface AppState {
-  tabs: JsonTab[];
-  activeTabId: string | null;
-  settings: AppSettings;
+	tabs: JsonTab[];
+	activeTabId: string | null;
+	settings: AppSettings;
 }
