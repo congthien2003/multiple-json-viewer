@@ -96,6 +96,79 @@ Navigate to `http://localhost:3000`
 2. Click on arrows to expand/collapse nested structures
 3. Use **Copy** button to copy to clipboard
 
+### Export JSON to Model Code
+From the **JSON Preview** action bar:
+1. Click **Export**
+2. Choose one output:
+   - **Export C# Class (Model)**
+   - **Export TypeScript Interface (Model)**
+3. Generated code is copied directly to clipboard
+
+Export rules:
+- C# uses `System.Text.Json` with `[JsonPropertyName("json_key")]`
+- TypeScript output is `interface`
+- Root model name is `Model`
+- Invalid keys (e.g. `user-name`, `1abc`, `first name`) are skipped automatically
+
+Example input:
+```json
+{
+  "id": 1,
+  "fullName": "Alice",
+  "isActive": true,
+  "address": {
+    "city": "HCM",
+    "zipCode": 70000
+  },
+  "user-name": "invalid and skipped"
+}
+```
+
+Example C# output:
+```csharp
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
+
+public class Model
+{
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+
+    [JsonPropertyName("fullName")]
+    public string Fullname { get; set; }
+
+    [JsonPropertyName("isActive")]
+    public bool Isactive { get; set; }
+
+    [JsonPropertyName("address")]
+    public ModelAddress Address { get; set; }
+}
+
+public class ModelAddress
+{
+    [JsonPropertyName("city")]
+    public string City { get; set; }
+
+    [JsonPropertyName("zipCode")]
+    public int Zipcode { get; set; }
+}
+```
+
+Example TypeScript output:
+```ts
+export interface Model {
+  id: number;
+  fullName: string;
+  isActive: boolean;
+  address: ModelAddress;
+}
+
+export interface ModelAddress {
+  city: string;
+  zipCode: number;
+}
+```
+
 ### Managing Tabs
 - **Switch tabs**: Click on any tab header
 - **Duplicate**: Click `⋯` menu on active tab → **Duplicate**

@@ -1,319 +1,150 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Copy, ChevronDown, ChevronRight } from 'lucide-react';
+import { useCallback, useMemo, useState } from 'react';
+import { Copy, Download, Maximize2, Minimize2 } from 'lucide-react';
+import { JsonView, allExpanded, collapseAllNested, darkStyles, defaultStyles } from 'react-json-view-lite';
+import 'react-json-view-lite/dist/index.css';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { JSONFormatter } from '@/lib/json-formatter';
+import toast from 'react-hot-toast';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { generateCSharpClasses, generateTypeScriptInterfaces } from '@/lib/json-codegen';
 
 interface JsonDisplayProps {
   content: string;
   theme: string;
 }
 
-interface JsonNode {
-  key: string | number;
-  value: unknown;
-  level: number;
-  type: 'array' | 'object' | 'string' | 'number' | 'boolean' | 'null';
-}
+const ROOT_MODEL_NAME = 'Model';
 
 export function JsonDisplay({ content, theme }: JsonDisplayProps) {
-  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
-  const { toast } = useToast();
+  const [expandAllNodes, setExpandAllNodes] = useState(false);
 
-  const parseContent = (): unknown => {
+  const parsedResult = useMemo(() => {
+    if (!content.trim()) {
+      return { data: null as unknown, error: null as string | null, isEmpty: true };
+    }
+
     try {
-      return JSON.parse(content);
+      return {
+        data: JSON.parse(content) as unknown,
+        error: null as string | null,
+        isEmpty: false,
+      };
     } catch {
-      return null;
+      return {
+        data: null as unknown,
+        error: 'Invalid JSON. Please check commas, brackets, and key/value pairs.',
+        isEmpty: false,
+      };
+    }
+  }, [content]);
+
+  const copyToClipboard = async (): Promise<void> => {
+    if (!content.trim()) return;
+
+    await navigator.clipboard.writeText(content);
+    toast.success('Copied to clipboard!', { duration: 2000 });
+  };
+
+  const copyExport = async (format: 'csharp' | 'typescript'): Promise<void> => {
+    if (parsedResult.isEmpty || parsedResult.error || parsedResult.data === null) {
+      toast.error('Cannot export. Please provide valid JSON first.', { duration: 2500 });
+      return;
+    }
+
+    try {
+      const generated =
+        format === 'csharp'
+          ? generateCSharpClasses(parsedResult.data, ROOT_MODEL_NAME)
+          : generateTypeScriptInterfaces(parsedResult.data, ROOT_MODEL_NAME);
+
+      await navigator.clipboard.writeText(generated);
+      toast.success(
+        format === 'csharp'
+          ? 'C# model copied to clipboard.'
+          : 'TypeScript interface copied to clipboard.',
+        { duration: 2500 },
+      );
+    } catch {
+      toast.error('Failed to export model. Please try with another JSON shape.', { duration: 3000 });
     }
   };
 
-  const copyToClipboard = (): void => {
-    navigator.clipboard.writeText(content).then(() => {
-      toast({
-        description: 'Copied to clipboard!',
-        duration: 2000,
-      });
-    });
-  };
+  const expandNodes = (): void => setExpandAllNodes(true);
+  const collapseNodes = (): void => setExpandAllNodes(false);
 
-  const toggleExpanded = (key: string): void => {
-    const newSet = new Set(expandedKeys);
-    if (newSet.has(key)) {
-      newSet.delete(key);
-    } else {
-      newSet.add(key);
-    }
-    setExpandedKeys(newSet);
-  };
+  const shouldExpandNode = useCallback(
+    expandAllNodes ? allExpanded : collapseAllNested,
+    [expandAllNodes],
+  );
 
-  const getThemeColors = () => {
-    const themes: Record<
-      string,
-      { bg: string; text: string; bracket: string; key: string; string: string; number: string; boolean: string }
-    > = {
-      light: {
-        bg: 'bg-white',
-        text: 'text-gray-800',
-        bracket: 'text-gray-500',
-        key: 'text-blue-600',
-        string: 'text-green-700',
-        number: 'text-orange-600',
-        boolean: 'text-red-600',
-      },
-      dark: {
-        bg: 'bg-slate-950',
-        text: 'text-gray-100',
-        bracket: 'text-gray-500',
-        key: 'text-blue-400',
-        string: 'text-green-400',
-        number: 'text-orange-400',
-        boolean: 'text-red-400',
-      },
-      monokai: {
-        bg: 'bg-slate-900',
-        text: 'text-gray-200',
-        bracket: 'text-gray-500',
-        key: 'text-pink-400',
-        string: 'text-green-400',
-        number: 'text-purple-400',
-        boolean: 'text-pink-400',
-      },
-      dracula: {
-        bg: 'bg-slate-900',
-        text: 'text-gray-100',
-        bracket: 'text-gray-600',
-        key: 'text-blue-300',
-        string: 'text-green-300',
-        number: 'text-purple-300',
-        boolean: 'text-pink-300',
-      },
-    };
-    return themes[theme] || themes.dark;
-  };
+  const viewerThemeStyles = theme === 'light' ? { ...defaultStyles, stringValue: 'text-black' } : { ...darkStyles };
 
-  const renderValue = (
-    value: unknown,
-    keyPath: string,
-    level: number
-  ): React.ReactNode => {
-    const themeColors = getThemeColors();
-    const padding = level * 16;
-
-    if (
-      value === null ||
-      value === undefined
-    ) {
-      return (
-        <span className={themeColors.boolean}>
-          null
-        </span>
-      );
-    }
-
-    if (typeof value === 'boolean') {
-      return (
-        <span className={themeColors.boolean}>
-          {value.toString()}
-        </span>
-      );
-    }
-
-    if (typeof value === 'number') {
-      return (
-        <span className={themeColors.number}>
-          {value}
-        </span>
-      );
-    }
-
-    if (typeof value === 'string') {
-      return (
-        <span className={themeColors.string}>
-          &quot;{value}&quot;
-        </span>
-      );
-    }
-
-    if (Array.isArray(value)) {
-      const isExpanded = expandedKeys.has(keyPath);
-      const isEmpty = value.length === 0;
-
-      return (
-        <div>
-          <button
-            onClick={() => toggleExpanded(keyPath)}
-            className="inline-flex items-center gap-1 hover:bg-gray-200/10 rounded px-1"
-          >
-            {!isEmpty && (
-              isExpanded ? (
-                <ChevronDown className="w-4 h-4" />
-              ) : (
-                <ChevronRight className="w-4 h-4" />
-              )
-            )}
-            <span className={themeColors.bracket}>
-              [
-            </span>
-            {!isEmpty && !isExpanded && (
-              <span className={`${themeColors.text} text-xs opacity-70`}>
-                {value.length} item{value.length !== 1 ? 's' : ''}
-              </span>
-            )}
-            {!isEmpty && !isExpanded && (
-              <span className={themeColors.bracket}>
-                …
-              </span>
-            )}
-          </button>
-          {isExpanded && !isEmpty && (
-            <div>
-              {value.map((item, index) => (
-                <div
-                  key={index}
-                  style={{ paddingLeft: `${padding}px` }}
-                >
-                  <span className={themeColors.bracket}>
-                    {renderValue(item, `${keyPath}[${index}]`, level + 1)}
-                  </span>
-                  {index < value.length - 1 && (
-                    <span className={themeColors.bracket}>
-                      ,
-                    </span>
-                  )}
-                </div>
-              ))}
-              <span
-                style={{ paddingLeft: `${padding - 16}px` }}
-                className={themeColors.bracket}
-              >
-                ]
-              </span>
-            </div>
-          )}
-          {isEmpty && (
-            <span className={themeColors.bracket}>
-              ]
-            </span>
-          )}
-        </div>
-      );
-    }
-
-    if (typeof value === 'object') {
-      const isExpanded = expandedKeys.has(keyPath);
-      const keys = Object.keys(value);
-      const isEmpty = keys.length === 0;
-
-      return (
-        <div>
-          <button
-            onClick={() => toggleExpanded(keyPath)}
-            className="inline-flex items-center gap-1 hover:bg-gray-200/10 rounded px-1"
-          >
-            {!isEmpty && (
-              isExpanded ? (
-                <ChevronDown className="w-4 h-4" />
-              ) : (
-                <ChevronRight className="w-4 h-4" />
-              )
-            )}
-            <span className={themeColors.bracket}>
-              {'{'}
-            </span>
-            {!isEmpty && !isExpanded && (
-              <span className={`${themeColors.text} text-xs opacity-70`}>
-                {keys.length} key{keys.length !== 1 ? 's' : ''}
-              </span>
-            )}
-            {!isEmpty && !isExpanded && (
-              <span className={themeColors.bracket}>
-                …
-              </span>
-            )}
-          </button>
-          {isExpanded && !isEmpty && (
-            <div>
-              {keys.map((key, index) => (
-                <div
-                  key={key}
-                  style={{ paddingLeft: `${padding}px` }}
-                  className="font-mono text-sm"
-                >
-                  <span className={themeColors.key}>
-                    &quot;{key}&quot;
-                  </span>
-                  <span className={themeColors.bracket}>
-                    :
-                  </span>
-                  {' '}
-                  {renderValue(
-                    (value as Record<string, unknown>)[key],
-                    `${keyPath}.${key}`,
-                    level + 1
-                  )}
-                  {index < keys.length - 1 && (
-                    <span className={themeColors.bracket}>
-                      ,
-                    </span>
-                  )}
-                </div>
-              ))}
-              <span
-                style={{ paddingLeft: `${padding - 16}px` }}
-                className={themeColors.bracket}
-              >
-                {'}'}
-              </span>
-            </div>
-          )}
-          {isEmpty && (
-            <span className={themeColors.bracket}>
-              {'}'}
-            </span>
-          )}
-        </div>
-      );
-    }
-
-    return null;
-  };
-
-  const data = parseContent();
-  const themeColors = getThemeColors();
-
-  if (!data) {
+  if (parsedResult.isEmpty) {
     return (
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex flex-1 items-center justify-center rounded-xl border border-dashed border-white/20 bg-black/10 p-8 text-center">
         <p className="text-sm text-muted-foreground">
-          Invalid JSON format
+          No preview yet. Paste JSON in the Input panel to see formatted output.
         </p>
       </div>
     );
   }
 
-  return (
-    <div
-      className={`flex-1 ${themeColors.bg} ${themeColors.text} p-4 rounded-lg overflow-auto font-mono text-sm animate-fadeIn`}
-    >
-      <div className="flex justify-between items-center mb-4">
-        <span className="text-xs opacity-70">
-          Formatted JSON View
-        </span>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={copyToClipboard}
-          className="gap-2 hover:bg-blue-100 dark:hover:bg-blue-950/30 transition-colors duration-300"
-        >
-          <Copy className="w-4 h-4" />
-          Copy
-        </Button>
+  if (parsedResult.error) {
+    return (
+      <div className="flex flex-1 items-center justify-center rounded-xl border border-dashed border-red-400/40 bg-red-500/5 p-8 text-center">
+        <p className="text-sm text-red-400">{parsedResult.error}</p>
       </div>
-      <div className="space-y-0">
-        {renderValue(data, 'root', 0)}
+    );
+  }
+
+  return (
+    <div className="animate-fadeIn flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-white/10 bg-white text-slate-100 shadow-sm backdrop-blur-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-4 py-3">
+        <span className="text-xs font-medium tracking-wide opacity-75 text-black">Formatted JSON View</span>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={expandNodes} className="gap-2 border border-white/10 text-black">
+            <Maximize2 className="h-4 w-4" />
+            Expand all
+          </Button>
+          <Button variant="ghost" size="sm" onClick={collapseNodes} className="gap-2 border border-white/10 text-black">
+            <Minimize2 className="h-4 w-4" />
+            Collapse all
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="gap-2 border border-white/10 text-black">
+                <Download className="h-4 w-4" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-60">
+              <DropdownMenuItem onClick={() => copyExport('csharp')}>Export C# Class (Model)</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => copyExport('typescript')}>
+                Export TypeScript Interface (Model)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button variant="ghost" size="sm" onClick={copyToClipboard} className="gap-2 border border-white/10 text-black">
+            <Copy className="h-4 w-4" />
+            Copy
+          </Button>
+        </div>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-auto px-5 py-4 font-mono text-sm leading-6">
+        <div className="rounded-lg border border-white/10 bg-slate-300 p-4">
+          <JsonView
+            data={parsedResult.data as Record<string, unknown> | unknown[]}
+            style={{ ...viewerThemeStyles }}
+            shouldExpandNode={shouldExpandNode}
+          />
+        </div>
       </div>
     </div>
   );

@@ -14,23 +14,13 @@ import { ThemeType } from "@/types";
 const THEMES: { value: ThemeType; label: string; preview: string }[] = [
   {
     value: "light",
-    label: "Light",
+    label: "Light (Default)",
     preview: "bg-white border border-gray-300",
   },
   {
     value: "dark",
     label: "Dark",
     preview: "bg-slate-800 border border-gray-600",
-  },
-  {
-    value: "monokai",
-    label: "Monokai",
-    preview: "bg-slate-900 border border-pink-500/50",
-  },
-  {
-    value: "dracula",
-    label: "Dracula",
-    preview: "bg-slate-900 border border-blue-400/50",
   },
 ];
 
@@ -44,7 +34,7 @@ export function ThemeSelector({ value, onChange }: ThemeSelectorProps) {
     <div className="flex items-center gap-2">
       <Palette className="w-4 h-4 text-muted-foreground animate-fadeIn" />
       <Select value={value} onValueChange={(v) => onChange(v as ThemeType)}>
-        <SelectTrigger className="w-40">
+        <SelectTrigger className="w-44">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
